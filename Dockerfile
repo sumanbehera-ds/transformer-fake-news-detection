@@ -8,7 +8,6 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
-COPY models/final_roberta_fake_news models/final_roberta_fake_news
 
 EXPOSE 8000
 

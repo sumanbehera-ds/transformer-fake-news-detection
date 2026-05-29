@@ -9,7 +9,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-MODEL_PATH = "models/final_roberta_fake_news"
+MODEL_PATH = "sumanbehera-ds/roberta-fake-news-detector"
 
 tokenizer = RobertaTokenizer.from_pretrained(MODEL_PATH)
 model = RobertaForSequenceClassification.from_pretrained(MODEL_PATH)
