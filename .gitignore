@@ -1,0 +1,15 @@
+fntenv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+data/
+models/
+mlruns/
+reports/
+
+*.zip
+*.safetensors
+*.bin
+
+.env
