@@ -22,6 +22,14 @@ def home():
 def health():
     return {"status": "healthy", "model_id": MODEL_ID}
 
+@app.get("/debug")
+def debug():
+    return {
+        "hf_token_exists": HF_TOKEN is not None,
+        "model_id": MODEL_ID,
+        "api_url": API_URL
+    }
+
 @app.post("/predict")
 def predict_news(data: NewsInput):
     response = requests.post(
@@ -31,7 +39,16 @@ def predict_news(data: NewsInput):
         timeout=60
     )
 
-    result = response.json()
+    try:
+        result = response.json()
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status_code": response.status_code,
+                "raw_response": response.text
+        }
+    )
 
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=result)
