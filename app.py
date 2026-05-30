@@ -32,47 +32,40 @@ def debug():
 
 @app.post("/predict")
 def predict_news(data: NewsInput):
-    response = requests.post(
-        API_URL,
-        headers=headers,
-        json={"inputs": data.text},
-        timeout=60
-    )
-
     try:
+        response = requests.post(
+            API_URL,
+            headers=headers,
+            json={"inputs": data.text},
+            timeout=60
+        )
+
+        print("HF STATUS:", response.status_code)
+        print("HF RESPONSE:", response.text)
+
         result = response.json()
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "status_code": response.status_code,
-                "raw_response": response.text
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=result)
+
+        scores = result[0]
+
+        if isinstance(scores, dict):
+            scores = [scores]
+
+        best = max(scores, key=lambda x: x["score"])
+
+        label_map = {
+            "LABEL_0": "FAKE",
+            "LABEL_1": "REAL"
         }
-    )
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=result)
+        return {
+            "prediction": label_map.get(best["label"], best["label"]),
+            "confidence": round(best["score"], 4),
+            "raw_output": scores
+        }
 
-    if isinstance(result, dict) and "error" in result:
-        raise HTTPException(status_code=503, detail=result["error"])
-
-    if not isinstance(result, list):
-        raise HTTPException(status_code=500, detail={"unexpected_output": result})
-
-    scores = result[0]
-
-    if isinstance(scores, dict):
-        scores = [scores]
-
-    best = max(scores, key=lambda x: x["score"])
-
-    label_map = {
-        "LABEL_0": "FAKE",
-        "LABEL_1": "REAL"
-    }
-
-    return {
-        "prediction": label_map.get(best["label"], best["label"]),
-        "confidence": round(best["score"], 4),
-        "raw_output": scores
-    }
+    except Exception as e:
+        print("PREDICT ERROR:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
