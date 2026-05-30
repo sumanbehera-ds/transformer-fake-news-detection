@@ -1,61 +1,63 @@
+import os
+import requests
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-from transformers import RobertaTokenizer, RobertaForSequenceClassification
-import torch
 
 app = FastAPI(
     title="Fake News Detection API",
-    description="RoBERTa-based fake news classifier",
+    description="Fake news classifier using Hugging Face Inference API",
     version="1.0.0"
 )
 
-MODEL_PATH = "sumanbehera-ds/roberta-fake-news-detector"
+HF_TOKEN = os.getenv("HF_TOKEN")
+MODEL_ID = "sumanbehera-ds/roberta-fake-news-detector"
+API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
 
-tokenizer = RobertaTokenizer.from_pretrained(MODEL_PATH)
-model = RobertaForSequenceClassification.from_pretrained(MODEL_PATH)
-model.eval()
-
-label_map = {
-    0: "FAKE",
-    1: "REAL"
+headers = {
+    "Authorization": f"Bearer {HF_TOKEN}"
 }
 
 class NewsInput(BaseModel):
-    text: str = Field(..., min_length=5, example="The government secretly controls the weather.")
-
-class PredictionResponse(BaseModel):
-    prediction: str
-    confidence: float
+    text: str = Field(..., min_length=5)
 
 @app.get("/")
 def home():
     return {"message": "Fake News Detection API is running"}
 
 @app.get("/health")
-def health_check():
+def health():
     return {
         "status": "healthy",
-        "model_loaded": True,
-        "model_name": "RoBERTa Fake News Classifier"
+        "model_source": "Hugging Face Inference API",
+        "model_id": MODEL_ID
     }
 
-@app.post("/predict", response_model=PredictionResponse)
+@app.post("/predict")
 def predict_news(data: NewsInput):
-    inputs = tokenizer(
-        data.text,
-        return_tensors="pt",
-        truncation=True,
-        padding=True,
-        max_length=128
+    response = requests.post(
+        API_URL,
+        headers=headers,
+        json={"inputs": data.text}
     )
 
-    with torch.no_grad():
-        outputs = model(**inputs)
-        probabilities = torch.softmax(outputs.logits, dim=1)
-        prediction = torch.argmax(probabilities, dim=1).item()
-        confidence = probabilities[0][prediction].item()
+    result = response.json()
+
+    if isinstance(result, dict) and "error" in result:
+        return {
+            "error": result["error"]
+        }
+
+    scores = result[0]
+
+    best = max(scores, key=lambda x: x["score"])
+
+    label_map = {
+        "LABEL_0": "FAKE",
+        "LABEL_1": "REAL"
+    }
 
     return {
-        "prediction": label_map[prediction],
-        "confidence": round(confidence, 4)
+        "prediction": label_map.get(best["label"], best["label"]),
+        "confidence": round(best["score"], 4),
+        "raw_output": scores
     }
