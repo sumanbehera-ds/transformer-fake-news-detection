@@ -7,7 +7,7 @@ app = FastAPI(title="Fake News Detection API")
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL_ID = "sumanbehera-ds/roberta-fake-news-detector"
-API_URL = f"https://api-inference.huggingface.co/models/{MODEL_ID}"
+API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL_ID}"
 
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
