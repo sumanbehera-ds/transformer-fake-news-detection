@@ -1,9 +1,12 @@
-import pandas as pd
-import numpy as np
+import os
+
 import mlflow
+import numpy as np
+import pandas as pd
 import torch
 
 from datasets import Dataset
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from transformers import (
     RobertaTokenizer,
     RobertaForSequenceClassification,
@@ -11,92 +14,40 @@ from transformers import (
     TrainingArguments
 )
 
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score
-)
-
 MODEL_NAME = "roberta-base"
+MAX_LENGTH = 128
+EPOCHS = 2
+BATCH_SIZE = 8
 
 COLS = [
     "id", "label", "statement", "subject", "speaker", "speaker_job",
     "state", "party", "barely_true_counts", "false_counts",
-    "half_true_counts", "mostly_true_counts",
-    "pants_fire_counts", "context"
+    "half_true_counts", "mostly_true_counts", "pants_fire_counts", "context"
 ]
+
 
 def convert_label(label):
     return 1 if label in ["true", "mostly-true"] else 0
 
-train_df = pd.read_csv(
-    "data/raw/train.tsv",
-    sep="\t",
-    header=None,
-    names=COLS
-)
 
-valid_df = pd.read_csv(
-    "data/raw/valid.tsv",
-    sep="\t",
-    header=None,
-    names=COLS
-)
+def load_data():
+    train_df = pd.read_csv("data/raw/train.tsv", sep="\t", header=None, names=COLS)
+    valid_df = pd.read_csv("data/raw/valid.tsv", sep="\t", header=None, names=COLS)
 
-train_df = train_df.rename(columns={"label": "labels"})
-valid_df = valid_df.rename(columns={"label": "labels"})
+    train_df["labels"] = train_df["label"].apply(convert_label)
+    valid_df["labels"] = valid_df["label"].apply(convert_label)
 
-train_ds = Dataset.from_pandas(train_df[["statement", "labels"]])
-valid_ds = Dataset.from_pandas(valid_df[["statement", "labels"]])
+    train_df = train_df[["statement", "labels"]]
+    valid_df = valid_df[["statement", "labels"]]
 
-tokenizer = RobertaTokenizer.from_pretrained(MODEL_NAME)
+    return train_df, valid_df
 
-def tokenize(batch):
-    return tokenizer(
-        batch["statement"],
-        truncation=True,
-        padding="max_length",
-        max_length=128
-    )
-
-train_ds = Dataset.from_pandas(
-    train_df[["statement", "label"]]
-)
-
-valid_ds = Dataset.from_pandas(
-    valid_df[["statement", "label"]]
-)
-
-train_ds = train_ds.map(tokenize, batched=True)
-valid_ds = valid_ds.map(tokenize, batched=True)
-
-train_ds.set_format(
-    "torch",
-    columns=["input_ids", "attention_mask", "label"]
-)
-
-valid_ds.set_format(
-    "torch",
-    columns=["input_ids", "attention_mask", "label"]
-)
-
-model = RobertaForSequenceClassification.from_pretrained(
-    MODEL_NAME,
-    num_labels=2
-)
 
 def compute_metrics(eval_pred):
-
     logits, labels = eval_pred
 
     preds = np.argmax(logits, axis=1)
-
-    probs = torch.softmax(
-        torch.tensor(logits),
-        dim=1
-    ).numpy()[:, 1]
+    probs = torch.softmax(torch.tensor(logits), dim=1).numpy()[:, 1]
 
     return {
         "accuracy": accuracy_score(labels, preds),
@@ -106,40 +57,84 @@ def compute_metrics(eval_pred):
         "roc_auc": roc_auc_score(labels, probs)
     }
 
-training_args = TrainingArguments(
-    output_dir="models/roberta_output",
-    eval_strategy="epoch",
-    save_strategy="epoch",
-    num_train_epochs=2,
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    logging_steps=100
-)
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_ds,
-    eval_dataset=valid_ds,
-    compute_metrics=compute_metrics
-)
+def main():
+    train_df, valid_df = load_data()
 
-mlflow.set_experiment("fake_news_roberta")
+    tokenizer = RobertaTokenizer.from_pretrained(MODEL_NAME)
 
-with mlflow.start_run():
+    def tokenize(batch):
+        return tokenizer(
+            batch["statement"],
+            truncation=True,
+            padding="max_length",
+            max_length=MAX_LENGTH
+        )
 
-    trainer.train()
+    train_ds = Dataset.from_pandas(train_df)
+    valid_ds = Dataset.from_pandas(valid_df)
 
-    metrics = trainer.evaluate()
+    train_ds = train_ds.map(tokenize, batched=True)
+    valid_ds = valid_ds.map(tokenize, batched=True)
 
-    for k, v in metrics.items():
-        if isinstance(v, (int, float)):
-            mlflow.log_metric(k, v)
+    train_ds.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
+    valid_ds.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
 
-    model.save_pretrained("models/final_roberta_fake_news")
-    tokenizer.save_pretrained("models/final_roberta_fake_news")
+    model = RobertaForSequenceClassification.from_pretrained(
+        MODEL_NAME,
+        num_labels=2
+    )
 
-    mlflow.log_param("model", "roberta-base")
-    mlflow.log_param("epochs", 2)
+    training_args = TrainingArguments(
+        output_dir="models/roberta_output",
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        learning_rate=2e-5,
+        num_train_epochs=EPOCHS,
+        per_device_train_batch_size=BATCH_SIZE,
+        per_device_eval_batch_size=BATCH_SIZE,
+        weight_decay=0.01,
+        logging_steps=100,
+        load_best_model_at_end=True,
+        metric_for_best_model="f1",
+        report_to="none"
+    )
 
-print("Training completed.")
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_ds,
+        eval_dataset=valid_ds,
+        compute_metrics=compute_metrics
+    )
+
+    mlflow.set_experiment("fake_news_roberta")
+
+    with mlflow.start_run(run_name="RoBERTa Auto Training"):
+        mlflow.log_param("model_name", MODEL_NAME)
+        mlflow.log_param("max_length", MAX_LENGTH)
+        mlflow.log_param("epochs", EPOCHS)
+        mlflow.log_param("batch_size", BATCH_SIZE)
+        mlflow.log_param("learning_rate", 2e-5)
+
+        trainer.train()
+
+        metrics = trainer.evaluate()
+
+        for key, value in metrics.items():
+            if isinstance(value, (int, float)):
+                mlflow.log_metric(key, value)
+
+        os.makedirs("models/final_roberta_fake_news", exist_ok=True)
+
+        model.save_pretrained("models/final_roberta_fake_news")
+        tokenizer.save_pretrained("models/final_roberta_fake_news")
+
+        mlflow.log_artifacts("models/final_roberta_fake_news", artifact_path="final_roberta_fake_news")
+
+        print(metrics)
+        print("RoBERTa training completed and logged to MLflow.")
+
+
+if __name__ == "__main__":
+    main()
