@@ -1,16 +1,4 @@
 import mlflow
-import mlflow.pytorch
-import torch
-
-from transformers import (
-    RobertaTokenizer,
-    RobertaForSequenceClassification
-)
-
-MODEL_PATH = "models/final_roberta_fake_news"
-
-tokenizer = RobertaTokenizer.from_pretrained(MODEL_PATH)
-model = RobertaForSequenceClassification.from_pretrained(MODEL_PATH)
 
 mlflow.set_experiment("fake_news_detection")
 
@@ -46,30 +34,19 @@ all_models = [
         "roc_auc": None,
     },
     {
-        "run_name": "BERT",
-        "model_type": "Transformer",
-        "algorithm": "BERT",
-        "accuracy": 0.0,
-        "precision": 0.0,
-        "recall": 0.0,
-        "f1": 0.0,
-        "roc_auc": None,
-    },
-    {
-        "run_name": "RoBERTa",
+        "run_name": "RoBERTa Colab Auto Training",
         "model_type": "Transformer",
         "algorithm": "RoBERTa",
-        "accuracy": 0.6814,
-        "precision": 0.5126,
-        "recall": 0.5333,
-        "f1": 0.5227,
-        "roc_auc": None,
+        "accuracy": 0.6869,
+        "precision": 0.5205,
+        "recall": 0.5429,
+        "f1": 0.5315,
+        "roc_auc": 0.7105,
     },
 ]
 
 for model in all_models:
     with mlflow.start_run(run_name=model["run_name"]):
-
         mlflow.log_param("model_type", model["model_type"])
         mlflow.log_param("algorithm", model["algorithm"])
         mlflow.log_param("dataset", "LIAR")

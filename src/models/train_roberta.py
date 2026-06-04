@@ -16,7 +16,7 @@ from transformers import (
 
 MODEL_NAME = "roberta-base"
 MAX_LENGTH = 128
-EPOCHS = 2
+EPOCHS = 3
 BATCH_SIZE = 8
 
 COLS = [
@@ -89,7 +89,7 @@ def main():
         output_dir="models/roberta_output",
         eval_strategy="epoch",
         save_strategy="epoch",
-        learning_rate=2e-5,
+        learning_rate=1e-5,
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
