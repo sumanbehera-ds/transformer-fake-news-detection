@@ -16,7 +16,7 @@ from transformers import (
 
 MODEL_NAME = "roberta-base"
 MAX_LENGTH = 128
-EPOCHS = 3
+EPOCHS = 4
 BATCH_SIZE = 8
 
 COLS = [
