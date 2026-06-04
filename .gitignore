@@ -4,7 +4,6 @@ __pycache__/
 .ipynb_checkpoints/
 
 data/
-models/
 mlruns/
 reports/
 mlflow.db
@@ -14,3 +13,5 @@ mlflow.db
 *.bin
 
 .env
+!src/models/
+!src/models/*.py
