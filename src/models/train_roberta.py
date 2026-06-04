@@ -17,7 +17,7 @@ from transformers import (
 
 MODEL_NAME = "roberta-base"
 MAX_LENGTH = 128
-EPOCHS = 2
+EPOCHS = 3
 BATCH_SIZE = 8
 LEARNING_RATE = 2e-5
 CLASS_WEIGHTS = [1.0, 1.8]
