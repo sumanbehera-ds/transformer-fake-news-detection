@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import torch
 
+from torch import nn
 from datasets import Dataset
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from transformers import (
@@ -16,8 +17,10 @@ from transformers import (
 
 MODEL_NAME = "roberta-base"
 MAX_LENGTH = 128
-EPOCHS = 4
+EPOCHS = 2
 BATCH_SIZE = 8
+LEARNING_RATE = 2e-5
+CLASS_WEIGHTS = [1.0, 1.8]
 
 COLS = [
     "id", "label", "statement", "subject", "speaker", "speaker_job",
@@ -58,6 +61,20 @@ def compute_metrics(eval_pred):
     }
 
 
+class WeightedTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        labels = inputs.get("labels")
+        outputs = model(**inputs)
+        logits = outputs.get("logits")
+
+        class_weights = torch.tensor(CLASS_WEIGHTS).to(logits.device)
+
+        loss_fct = nn.CrossEntropyLoss(weight=class_weights)
+        loss = loss_fct(logits, labels)
+
+        return (loss, outputs) if return_outputs else loss
+
+
 def main():
     train_df, valid_df = load_data()
 
@@ -89,7 +106,7 @@ def main():
         output_dir="models/roberta_output",
         eval_strategy="epoch",
         save_strategy="epoch",
-        learning_rate=1e-5,
+        learning_rate=LEARNING_RATE,
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
@@ -100,7 +117,7 @@ def main():
         report_to="none"
     )
 
-    trainer = Trainer(
+    trainer = WeightedTrainer(
         model=model,
         args=training_args,
         train_dataset=train_ds,
@@ -110,12 +127,13 @@ def main():
 
     mlflow.set_experiment("fake_news_roberta")
 
-    with mlflow.start_run(run_name="RoBERTa Auto Training"):
+    with mlflow.start_run(run_name="RoBERTa Weighted Loss"):
         mlflow.log_param("model_name", MODEL_NAME)
         mlflow.log_param("max_length", MAX_LENGTH)
         mlflow.log_param("epochs", EPOCHS)
         mlflow.log_param("batch_size", BATCH_SIZE)
-        mlflow.log_param("learning_rate", 2e-5)
+        mlflow.log_param("learning_rate", LEARNING_RATE)
+        mlflow.log_param("class_weights", str(CLASS_WEIGHTS))
 
         trainer.train()
 
@@ -130,10 +148,13 @@ def main():
         model.save_pretrained("models/final_roberta_fake_news")
         tokenizer.save_pretrained("models/final_roberta_fake_news")
 
-        mlflow.log_artifacts("models/final_roberta_fake_news", artifact_path="final_roberta_fake_news")
+        mlflow.log_artifacts(
+            "models/final_roberta_fake_news",
+            artifact_path="final_roberta_fake_news"
+        )
 
         print(metrics)
-        print("RoBERTa training completed and logged to MLflow.")
+        print("Weighted RoBERTa training completed and logged to MLflow.")
 
 
 if __name__ == "__main__":
