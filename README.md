@@ -193,6 +193,16 @@ https://huggingface.co/sumanbehera-ds/roberta-fake-news-detector
 This model is trained on the LIAR dataset, which contains short political claims. It identifies linguistic patterns learned during training and should not be considered a real-time fact-checking system or a source of verified truth.
 
 ---
+# 👨‍💻 Author
 
+**Suman Behera**
+
+AI/ML Engineer | Data Scientist
+
+GitHub:
+https://github.com/sumanbehera-ds
+
+LinkedIn:
+https://linkedin.com/in/suman-01-behera
 
 
