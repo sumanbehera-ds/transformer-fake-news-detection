@@ -125,7 +125,7 @@ def main():
         compute_metrics=compute_metrics
     )
 
-    mlflow.set_experiment("fake_news_roberta")
+    mlflow.set_experiment("fake_news_detection")
 
     with mlflow.start_run(run_name="RoBERTa Weighted Loss"):
         mlflow.log_param("model_name", MODEL_NAME)

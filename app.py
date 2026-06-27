@@ -11,16 +11,29 @@ API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL_ID}"
 
 headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
+
+@app.on_event("startup")
+def validate_token():
+    if not HF_TOKEN:
+        raise RuntimeError(
+            "HF_TOKEN environment variable is not set. "
+            "Set it with: export HF_TOKEN=your_token"
+        )
+
+
 class NewsInput(BaseModel):
-    text: str = Field(..., min_length=5)
+    text: str = Field(..., min_length=5, max_length=512)
+
 
 @app.get("/")
 def home():
     return {"message": "Fake News Detection API is running"}
 
+
 @app.get("/health")
 def health():
     return {"status": "healthy", "model_id": MODEL_ID}
+
 
 @app.get("/debug")
 def debug():
@@ -29,6 +42,7 @@ def debug():
         "model_id": MODEL_ID,
         "api_url": API_URL
     }
+
 
 @app.post("/predict")
 def predict_news(data: NewsInput):
@@ -48,10 +62,15 @@ def predict_news(data: NewsInput):
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=result)
 
-        scores = result[0]
-
-        if isinstance(scores, dict):
-            scores = [scores]
+        # Handle both response formats from HF Inference API:
+        # Format 1 (nested): [[{"label": "LABEL_0", "score": 0.7}, {...}]]
+        # Format 2 (flat):   [{"label": "LABEL_0", "score": 0.7}, {...}]
+        if isinstance(result[0], list):
+            scores = result[0]
+        elif isinstance(result[0], dict):
+            scores = result
+        else:
+            raise HTTPException(status_code=500, detail="Unexpected response format from HF API")
 
         best = max(scores, key=lambda x: x["score"])
 
