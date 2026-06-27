@@ -1,208 +1,230 @@
 # 📰 Transformer Fake News Detection
 
-A production-ready Natural Language Processing (NLP) system for detecting fake news using Transformer models. This project compares traditional machine learning with modern Transformer architectures and deploys the best-performing model using FastAPI, Docker, MLflow, and Hugging Face.
+An end-to-end NLP system for detecting fake news using Transformer models. This project benchmarks classical ML baselines against fine-tuned Transformer architectures and deploys the best-performing model via FastAPI, Docker, MLflow, and Hugging Face.
 
 ---
 
-## 🚀 Overview
+## 🌐 Live Demo
 
-Fake news spreads rapidly across digital platforms and can significantly influence public opinion. This project builds an end-to-end fake news detection pipeline that classifies short news claims as **REAL** or **FAKE** using multiple machine learning and deep learning approaches.
-
-The project includes:
-
-* Data preprocessing and exploratory analysis
-* TF-IDF baseline models
-* Transformer fine-tuning (DistilBERT & RoBERTa)
-* Experiment tracking with MLflow
-* REST API using FastAPI
-* Docker containerization
-* Interactive Hugging Face deployment
+| | Link |
+|---|---|
+| **Hugging Face Space** | https://huggingface.co/spaces/sumanbehera-ds/roberta-fake-news-api |
+| **Hugging Face Model** | https://huggingface.co/sumanbehera-ds/roberta-fake-news-detector |
 
 ---
 
-# 📊 Dataset
+## ⭐ Key Results
 
-**Dataset:** LIAR Dataset
-
-The LIAR dataset contains short political statements labeled with six truthfulness categories.
-
-These labels were converted into a binary classification problem:
-
-| Original Labels                | Binary Label |
-| ------------------------------ | ------------ |
-| pants-fire, false, barely-true | FAKE         |
-| half-true, mostly-true, true   | REAL         |
-
-After preprocessing:
-
-* REAL: **3,638**
-* FAKE: **6,602**
+| Metric | Baseline (TF-IDF + LR) | Best Model (Weighted RoBERTa) | Improvement |
+|---|---|---|---|
+| F1 Score | 0.3423 | **0.5664** | **+65.5%** |
+| Recall | 25.7% | **64.5%** | **+38.8pp** |
+| ROC-AUC | 0.6702 | **0.7152** | **+6.7%** |
 
 ---
 
-# 🧠 Models Evaluated
+## 📊 Dataset
 
-| Model                        |   Accuracy |  Precision |     Recall |   F1 Score |    ROC-AUC |
-| ---------------------------- | ---------: | ---------: | ---------: | ---------: | ---------: |
-| TF-IDF + Logistic Regression |     0.6768 |     0.5118 |     0.2571 |     0.3423 |     0.6702 |
-| TF-IDF + Naive Bayes         |     0.6651 |     0.4490 |     0.1048 |     0.1699 |     0.6565 |
-| DistilBERT                   |     0.6900 |     0.5327 |     0.4261 |     0.4735 |          — |
-| RoBERTa                      |     0.6916 |     0.5397 |     0.3881 |     0.4515 |          — |
-| **Weighted RoBERTa (Best)**  | **0.6768** | **0.5047** | **0.6452** | **0.5664** | **0.7152** |
+**LIAR Dataset** — short political statements labeled with six truthfulness categories, converted to binary classification:
 
----
+| Original Labels | Binary Label |
+|---|---|
+| pants-fire, false, barely-true, half-true | FAKE (0) |
+| mostly-true, true | REAL (1) |
 
-# ⭐ Key Results
+| Split | Samples |
+|---|---|
+| Train | 10,240 |
+| Validation | 1,284 |
+| Test | 1,267 |
 
-* Improved F1 Score from **0.3423 → 0.5664** using Transformer fine-tuning.
-* Increased Recall from **25.7% → 64.5%**, reducing missed fake news.
-* Compared classical ML and Transformer-based architectures.
-* Tracked experiments with MLflow.
-* Built a production-ready REST API using FastAPI.
-* Dockerized the complete application.
-* Deployed an interactive inference application on Hugging Face.
+Class distribution: FAKE **6,602** · REAL **3,638** (imbalanced — addressed via weighted loss)
 
 ---
 
-# 🛠 Tech Stack
+## 🧠 Model Comparison
 
-### Programming
+| Model | Accuracy | Precision | Recall | F1 Score | ROC-AUC |
+|---|---|---|---|---|---|
+| TF-IDF + Logistic Regression | 0.6768 | 0.5118 | 0.2571 | 0.3423 | 0.6702 |
+| TF-IDF + Naive Bayes | 0.6651 | 0.4490 | 0.1048 | 0.1699 | 0.6565 |
+| DistilBERT | 0.6900 | 0.5327 | 0.4261 | 0.4735 | — |
+| RoBERTa (standard) | 0.6916 | 0.5397 | 0.3881 | 0.4515 | — |
+| **Weighted RoBERTa (Best)** | **0.6768** | **0.5047** | **0.6452** | **0.5664** | **0.7152** |
 
-* Python
-
-### Machine Learning
-
-* Scikit-learn
-* PyTorch
-* Hugging Face Transformers
-
-### NLP
-
-* TF-IDF
-* Logistic Regression
-* Naive Bayes
-* DistilBERT
-* RoBERTa
-
-### Deployment
-
-* FastAPI
-* Docker
-* Hugging Face Spaces
-
-### MLOps
-
-* MLflow
-* Git
-* GitHub
+> **Why Weighted RoBERTa?** Standard RoBERTa optimizes accuracy but underperforms on the minority class (REAL). A custom `WeightedTrainer` with `CrossEntropyLoss(weight=[1.0, 1.8])` significantly improved Recall and F1 on the imbalanced LIAR dataset.
 
 ---
 
-# 📁 Project Structure
+## 🛠 Tech Stack
 
-```text
+| Category | Tools |
+|---|---|
+| Language | Python |
+| ML / DL | Scikit-learn, PyTorch, Hugging Face Transformers |
+| NLP | TF-IDF, DistilBERT, RoBERTa |
+| Experiment Tracking | MLflow |
+| API | FastAPI |
+| Containerization | Docker |
+| Deployment | Hugging Face Spaces |
+| Version Control | Git, GitHub |
+
+---
+
+## 📁 Project Structure
+
+```
 transformer-fake-news-detection/
 │
-├── app.py
-├── Dockerfile
-├── requirements.txt
-├── README.md
+├── app.py                        # FastAPI REST API (calls HF Inference API)
+├── Dockerfile                    # Docker config for API deployment
+├── requirements.txt              # API dependencies
+├── requirements-train.txt        # Full training dependencies
 │
 ├── src/
-│   ├── preprocessing.py
-│   ├── train.py
-│   ├── evaluate.py
-│   └── inference.py
+│   └── models/
+│       ├── train_model.py        # TF-IDF baseline training + MLflow logging
+│       ├── train_roberta.py      # Weighted RoBERTa fine-tuning + MLflow logging
+│       ├── mlflow_tracking.py    # Backfill script for MLflow experiment runs
+│       └── test_model.py         # Local model inference test
 │
 ├── notebooks/
+│   ├── 01_eda_preprocessing_baseline.ipynb   # EDA + baseline model
+│   └── 02_transformer_training_colab.ipynb   # Transformer training (Colab)
+│
 ├── models/
-├── reports/
-├── streamlit/
-└── screenshots/
+│   ├── tfidf_logistic_model.pkl              # Trained baseline model
+│   └── final_roberta_fake_news/              # RoBERTa tokenizer + config
+│       ├── config.json
+│       ├── tokenizer.json
+│       └── tokenizer_config.json
+│
+└── streamlit_app/
+    └── app.py                    # Streamlit UI (runs alongside FastAPI locally)
 ```
 
 ---
 
-# 🚀 Installation
+## 🚀 Installation
 
 ```bash
 git clone https://github.com/sumanbehera-ds/transformer-fake-news-detection.git
-
 cd transformer-fake-news-detection
+```
 
+**For API only:**
+```bash
 pip install -r requirements.txt
+```
+
+**For training:**
+```bash
+pip install -r requirements-train.txt
 ```
 
 ---
 
-# ▶️ Run FastAPI
+## ▶️ Run FastAPI
 
+Set your Hugging Face token first:
+```bash
+export HF_TOKEN=your_huggingface_token
+```
+
+Then start the API:
 ```bash
 uvicorn app:app --reload
 ```
 
-Swagger UI:
+Swagger UI: `http://127.0.0.1:8000/docs`
 
+**API Endpoints:**
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Health check |
+| `/health` | GET | API status + model ID |
+| `/debug` | GET | Token and config info |
+| `/predict` | POST | Classify a news statement |
+
+**Example request:**
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "The government secretly controls the weather."}'
 ```
-http://127.0.0.1:8000/docs
+
+**Example response:**
+```json
+{
+  "prediction": "FAKE",
+  "confidence": 0.8923,
+  "raw_output": [
+    {"label": "LABEL_0", "score": 0.8923},
+    {"label": "LABEL_1", "score": 0.1077}
+  ]
+}
 ```
 
 ---
 
-# 🐳 Docker
+## 🐳 Docker
 
-Build
-
+**Build:**
 ```bash
 docker build -t fake-news-detector .
 ```
 
-Run
-
+**Run:**
 ```bash
-docker run -p 8000:8000 fake-news-detector
+docker run -p 7860:7860 -e HF_TOKEN=your_token fake-news-detector
 ```
 
 ---
 
-# 🌐 Live Demo
+## 🧪 Training
 
-## Hugging Face Space
+**Train baseline (TF-IDF + Logistic Regression):**
+```bash
+python src/models/train_model.py
+```
 
-https://huggingface.co/spaces/sumanbehera-ds/roberta-fake-news-api
+**Fine-tune Weighted RoBERTa:**
+```bash
+python src/models/train_roberta.py
+```
 
-## Hugging Face Model
+All runs are tracked in MLflow under the `fake_news_detection` experiment.
 
-https://huggingface.co/sumanbehera-ds/roberta-fake-news-detector
+```bash
+mlflow ui
+```
+
+Open: `http://127.0.0.1:5000`
+
+---
+
+## ⚠️ Limitations
+
+- Trained on the LIAR dataset which contains short political claims (avg. 107 chars). Performance on long-form news articles may differ.
+- Binary label mapping collapses six nuanced categories — `half-true` is classified as FAKE in this implementation.
+- Should not be used as a real-time fact-checking system or source of verified truth.
 
 ---
 
-# 📈 Future Improvements
+## 📈 Future Improvements
 
-* Explain predictions using SHAP or LIME
-* Add batch prediction endpoint
-* Integrate real-time news verification APIs
-* Add CI/CD with GitHub Actions
-* Continuous model monitoring
-* Automated retraining pipeline
-
----
-
-# ⚠️ Limitations
-
-This model is trained on the LIAR dataset, which contains short political claims. It identifies linguistic patterns learned during training and should not be considered a real-time fact-checking system or a source of verified truth.
+- Explainability with SHAP or LIME
+- Batch prediction endpoint
+- CI/CD with GitHub Actions
+- Real-time news API integration
+- Continuous model monitoring and automated retraining
 
 ---
-# 👨‍💻 Author
 
-**Suman Behera**
+## 👨‍💻 Author
 
-AI/ML Engineer | Data Scientist
+**Suman Behera** · AI/ML Engineer | Data Scientist
 
-GitHub:
-https://github.com/sumanbehera-ds
-
-LinkedIn:
-https://linkedin.com/in/suman-01-behera
-
-
+[![GitHub](https://img.shields.io/badge/GitHub-sumanbehera--ds-181717?logo=github)](https://github.com/sumanbehera-ds)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-suman--01--behera-0077B5?logo=linkedin)](https://linkedin.com/in/suman-01-behera)
