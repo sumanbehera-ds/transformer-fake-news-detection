@@ -9,4 +9,4 @@ mlruns/
 data/
 reports/
 streamlit_app/
-*.zipp
+*.zip

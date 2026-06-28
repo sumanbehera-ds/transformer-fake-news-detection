@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 import requests
 
@@ -7,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-API_URL = "http://127.0.0.1:8000/predict"
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")
 
 st.markdown(
     """
@@ -35,8 +37,12 @@ if analyze:
     else:
         with st.spinner("Analyzing..."):
             try:
-                response = requests.post(API_URL, json={"text": news_text})
+                response = requests.post(API_URL, json={"text": news_text}, timeout=60)
                 result = response.json()
+
+                if response.status_code != 200:
+                    st.error(f"API error: {result.get('detail', result)}")
+                    st.stop()
 
                 prediction = result["prediction"]
                 confidence = result["confidence"]
@@ -51,8 +57,10 @@ if analyze:
                 st.metric("Confidence", f"{confidence * 100:.2f}%")
                 st.progress(confidence)
 
-            except Exception:
-                st.error("API is not running. Start FastAPI first.")
+            except requests.RequestException:
+                st.error("API is not reachable. Start FastAPI first or set API_URL.")
+            except (KeyError, ValueError):
+                st.error("API returned an unexpected response.")
 
 st.divider()
 

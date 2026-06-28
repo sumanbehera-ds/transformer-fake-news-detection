@@ -6,7 +6,9 @@ __pycache__/
 
 data/
 mlruns/
-reports/
+reports/**
+!reports/
+!reports/metrics.md
 mlflow.db
 
 *.zip

@@ -9,7 +9,7 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL_ID = "sumanbehera-ds/roberta-fake-news-detector"
 API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL_ID}"
 
-headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+headers = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
 
 
 @app.on_event("startup")
@@ -54,10 +54,17 @@ def predict_news(data: NewsInput):
             timeout=60
         )
 
-        print("HF STATUS:", response.status_code)
-        print("HF RESPONSE:", response.text)
-
-        result = response.json()
+        try:
+            result = response.json()
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "error": "Hugging Face returned a non-JSON response",
+                    "status_code": response.status_code,
+                    "response": response.text
+                }
+            ) from exc
 
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=result)
@@ -65,6 +72,9 @@ def predict_news(data: NewsInput):
         # Handle both response formats from HF Inference API:
         # Format 1 (nested): [[{"label": "LABEL_0", "score": 0.7}, {...}]]
         # Format 2 (flat):   [{"label": "LABEL_0", "score": 0.7}, {...}]
+        if not isinstance(result, list) or not result:
+            raise HTTPException(status_code=500, detail="Unexpected response format from HF API")
+
         if isinstance(result[0], list):
             scores = result[0]
         elif isinstance(result[0], dict):
@@ -85,6 +95,9 @@ def predict_news(data: NewsInput):
             "raw_output": scores
         }
 
+    except HTTPException:
+        raise
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Hugging Face request failed: {e}")
     except Exception as e:
-        print("PREDICT ERROR:", str(e))
         raise HTTPException(status_code=500, detail=str(e))

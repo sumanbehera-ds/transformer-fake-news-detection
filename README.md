@@ -21,6 +21,8 @@ An end-to-end NLP system for detecting fake news using Transformer models. This 
 | Recall | 25.7% | **64.5%** | **+38.8pp** |
 | ROC-AUC | 0.6702 | **0.7152** | **+6.7%** |
 
+> **Metric provenance:** The full comparison table and deployed model/API links are recorded in [`reports/metrics.md`](reports/metrics.md). Notebook 2 includes a Colab training provenance note because some transformer cell outputs were cleared before export.
+
 ---
 
 ## 📊 Dataset
@@ -112,9 +114,16 @@ git clone https://github.com/sumanbehera-ds/transformer-fake-news-detection.git
 cd transformer-fake-news-detection
 ```
 
+The committed `models/final_roberta_fake_news/` folder contains tokenizer/config files only. Large model weight files are not tracked; `src/models/test_model.py` falls back to the deployed Hugging Face model when local weights are absent.
+
 **For API only:**
 ```bash
 pip install -r requirements.txt
+```
+
+**For Streamlit UI:**
+```bash
+pip install -r requirements-ui.txt
 ```
 
 **For training:**
@@ -168,6 +177,20 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 
 ---
 
+## 🖥️ Run Streamlit UI
+
+```bash
+streamlit run streamlit_app/app.py
+```
+
+By default, the UI calls `http://127.0.0.1:8000/predict`. Override it when needed:
+
+```bash
+API_URL=http://127.0.0.1:7860/predict streamlit run streamlit_app/app.py
+```
+
+---
+
 ## 🐳 Docker
 
 **Build:**
@@ -183,6 +206,16 @@ docker run -p 7860:7860 -e HF_TOKEN=your_token fake-news-detector
 ---
 
 ## 🧪 Training
+
+Before running training scripts, download the LIAR dataset and place the split files at:
+
+```text
+data/raw/train.tsv
+data/raw/valid.tsv
+data/raw/test.tsv
+```
+
+The `data/` directory is intentionally ignored to keep the repository lightweight.
 
 **Train baseline (TF-IDF + Logistic Regression):**
 ```bash
