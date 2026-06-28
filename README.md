@@ -17,11 +17,11 @@ An end-to-end NLP system for detecting fake news using Transformer models. This 
 
 | Metric | Baseline (TF-IDF + LR) | Best Model (Weighted RoBERTa) | Improvement |
 |---|---|---|---|
-| F1 Score | 0.3423 | **0.5664** | **+65.5%** |
-| Recall | 25.7% | **64.5%** | **+38.8pp** |
-| ROC-AUC | 0.6702 | **0.7152** | **+6.7%** |
+| F1 Score | 0.3423 | **0.5740** | **+67.7%** |
+| Recall | 25.7% | **68.3%** | **+42.6pp** |
+| ROC-AUC | 0.6702 | **0.7208** | **+7.5%** |
 
-> **Metric provenance:** The full comparison table and deployed model/API links are recorded in [`reports/metrics.md`](reports/metrics.md). Notebook 2 includes a Colab training provenance note because some transformer cell outputs were cleared before export.
+> **Metric provenance:** The full comparison table and deployed model/API links are recorded in [`reports/metrics.md`](reports/metrics.md). Notebook 2 includes executed Colab outputs for the weighted RoBERTa training and evaluation run.
 
 ---
 
@@ -52,7 +52,7 @@ Class distribution: FAKE **6,602** · REAL **3,638** (imbalanced — addressed v
 | TF-IDF + Naive Bayes | 0.6651 | 0.4490 | 0.1048 | 0.1699 | 0.6565 |
 | DistilBERT | 0.6900 | 0.5327 | 0.4261 | 0.4735 | — |
 | RoBERTa (standard) | 0.6916 | 0.5397 | 0.3881 | 0.4515 | — |
-| **Weighted RoBERTa (Best)** | **0.6768** | **0.5047** | **0.6452** | **0.5664** | **0.7152** |
+| **Weighted RoBERTa (Best)** | **0.6682** | **0.4948** | **0.6833** | **0.5740** | **0.7208** |
 
 > **Why Weighted RoBERTa?** Standard RoBERTa optimizes accuracy but underperforms on the minority class (REAL). A custom `WeightedTrainer` with `CrossEntropyLoss(weight=[1.0, 1.8])` significantly improved Recall and F1 on the imbalanced LIAR dataset.
 
