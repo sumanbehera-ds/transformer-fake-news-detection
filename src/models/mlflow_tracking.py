@@ -43,6 +43,18 @@ all_models = [
         "f1": 0.5315,
         "roc_auc": 0.7105,
     },
+    {
+        "run_name": "Weighted RoBERTa (Best)",
+        "model_type": "Transformer",
+        "algorithm": "RoBERTa + Weighted Loss",
+        "accuracy": 0.6682,
+        "precision": 0.4948,
+        "recall": 0.6833,
+        "f1": 0.5740,
+        "roc_auc": 0.7208,
+        "class_weights": "[1.0, 1.8]",
+        "split": "validation",
+    },
 ]
 
 for model in all_models:
@@ -52,6 +64,12 @@ for model in all_models:
         mlflow.log_param("dataset", "LIAR")
         mlflow.log_param("task", "Binary Fake News Classification")
         mlflow.log_param("labels", "FAKE=0, REAL=1")
+
+        if "class_weights" in model:
+            mlflow.log_param("class_weights", model["class_weights"])
+
+        if "split" in model:
+            mlflow.log_param("split", model["split"])
 
         mlflow.log_metric("accuracy", model["accuracy"])
         mlflow.log_metric("precision", model["precision"])
