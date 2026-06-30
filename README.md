@@ -51,7 +51,7 @@ Class distribution: FAKE **6,602** · REAL **3,638** (imbalanced — addressed v
 | TF-IDF + Logistic Regression | 0.6768 | 0.5118 | 0.2571 | 0.3423 | 0.6702 |
 | TF-IDF + Naive Bayes | 0.6651 | 0.4490 | 0.1048 | 0.1699 | 0.6565 |
 | DistilBERT | 0.6900 | 0.5327 | 0.4261 | 0.4735 | — |
-| RoBERTa (standard) | 0.6916 | 0.5397 | 0.3881 | 0.4515 | — |
+| RoBERTa (standard) | 0.6869 | 0.5205 | 0.5429 | 0.5315 | 0.7105 |
 | **Weighted RoBERTa (Best)** | **0.6682** | **0.4948** | **0.6833** | **0.5740** | **0.7208** |
 
 > **Why Weighted RoBERTa?** Standard RoBERTa optimizes accuracy but underperforms on the minority class (REAL). A custom `WeightedTrainer` with `CrossEntropyLoss(weight=[1.0, 1.8])` significantly improved Recall and F1 on the imbalanced LIAR dataset.
